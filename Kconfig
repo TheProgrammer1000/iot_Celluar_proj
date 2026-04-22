@@ -36,9 +36,13 @@ config THINGY
 config GNSS_PERIODIC_INTERVAL
     int "Fix interval for periodic GPS fixes"
     range 10 65535
-    default 120
+    default 180
     help
         Fix interval (in secounds) for periodic fixes.
+
+config DTLS_SEC_TAG
+    int "Indicate where the sec tag is and so the modem knows"
+    default 12
 
 config GNSS_PERIODIC_TIMEOUT
     int "Fix timeout for periodic GPS fixes"
