@@ -49,44 +49,12 @@ int server_resolve() {
 int client_init() {
     int err;
 
-    enum {
-            NONE = 0,
-            OPTIONAL = 1,
-            REQUIRED = 2,
-    };
-
-    int verify = REQUIRED;
-
-    sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_DTLS_1_2);
+    sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if(sock < 0) {
             LOG_INF("Connection failed : %d", errno);
             return -errno;
     }
-
-    /* Set the TLS PEER verify*/
-    err = setsockopt(sock, SOL_TLS, TLS_PEER_VERIFY, &verify, sizeof(verify));
-    if (err) {
-        LOG_ERR("Failed to setup peer verification, errno %d\n", errno);
-        return -errno;
-    }
-
-    /*  Set the TLS hostname */
-    err = setsockopt(sock, SOL_TLS, TLS_HOSTNAME, CONFIG_COAP_SERVER_HOSTNAME, strlen(CONFIG_COAP_SERVER_HOSTNAME));
-    if (err) {
-        LOG_ERR("Failed to setup TLS hostname (%s), errno %d\n",
-            CONFIG_COAP_SERVER_HOSTNAME, errno);
-        return -errno;
-    }
-
-    /* Set the credential security tag */
-    sec_tag_t sec_tag_list[] = { CONFIG_DTLS_SEC_TAG };
-
-    err = setsockopt(sock, SOL_TLS, TLS_SEC_TAG_LIST, sec_tag_list,
-            sizeof(sec_tag_t) * ARRAY_SIZE(sec_tag_list));
-    if (err) {
-        LOG_ERR("Failed to setup socket security tag, errno %d\n", errno);
-        return -errno;
-    }
+ 
 
     err = connect(sock, (struct sockaddr*)&server, sizeof(struct sockaddr_in));
     if(err < 0) {

@@ -14,21 +14,6 @@ int modem_configure(void) {
             return err;
     }
 
-    err = modem_key_mgmt_write(SEC_TAG, MODEM_KEY_MGMT_CRED_TYPE_IDENTITY, CONFIG_COAP_DEVICE_NAME, 
-        strlen(CONFIG_COAP_DEVICE_NAME));
-    if (err) {
-            LOG_ERR("Failed to write identity: %d\n", err);
-            return err;
-    }
-
-    err = modem_key_mgmt_write(SEC_TAG, MODEM_KEY_MGMT_CRED_TYPE_PSK, CONFIG_COAP_SERVER_PSK, 
-        strlen(CONFIG_COAP_SERVER_PSK));
-    if (err) {
-            LOG_ERR("Failed to write identity: %d\n", err);
-            return err;
-    }
-
-
     err = lte_lc_psm_req(true);
     if (err) {
             LOG_ERR("lte_lc_psm_req, error: %d", err);

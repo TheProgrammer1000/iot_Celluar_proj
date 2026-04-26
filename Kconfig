@@ -15,6 +15,10 @@ config COAP_RX_RESOURCE
     string "CoAP resource - this is the RX channel of the board"
     default "validate"
 
+config COAP_DEVICE_ID
+    int "CoAP device id - To know which sensor is speaking"
+    default 123456
+
 # - Define PSK Identity configurations
 config COAP_DEVICE_NAME
     string "Device resource name - this will be the device name on the CoAP server"
@@ -36,7 +40,7 @@ config THINGY
 config GNSS_PERIODIC_INTERVAL
     int "Fix interval for periodic GPS fixes"
     range 10 65535
-    default 180
+    default 15
     help
         Fix interval (in secounds) for periodic fixes.
 
@@ -47,7 +51,7 @@ config DTLS_SEC_TAG
 config GNSS_PERIODIC_TIMEOUT
     int "Fix timeout for periodic GPS fixes"
     range 0 65535
-    default 480
+    default 120
     help
        Fix timeout (in secounds) for periodic fixes.
        If set to zero, GNSS is allowed to run indefinietly unttil a valid PVT estimate is produced.

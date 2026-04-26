@@ -23,26 +23,43 @@ void print_fix_data(struct nrf_modem_gnss_pvt_data_frame *pvt_data)
 	       pvt_data->datetime.ms);
 }
 
-int store_gps_data(struct nrf_modem_gnss_pvt_data_frame *pvt_data) {
+int store_gps_data(struct nrf_modem_gnss_pvt_data_frame *pvt_data)
+{
     int err = snprintf(
-                    (char *)gps_data,
-                    sizeof(gps_data),
-                    "Latitude: %.06f, Longitude: %.06f, Accuracy: %.1f m, Time (UTC): %02u:%02u:%02u.%03u",
-                    pvt_data->latitude,
-                    pvt_data->longitude,
-                    pvt_data->accuracy,
-                    pvt_data->datetime.hour,
-                    pvt_data->datetime.minute,
-                    pvt_data->datetime.seconds,
-                    pvt_data->datetime.ms
-                    );	
-    
+        (char *)gps_data,
+        sizeof(gps_data),
+        "{"
+            "\"device_ID\":%d,"
+            "\"lat\":%.7f,"
+            "\"lon\":%.7f,"
+            "\"acc\":%.2f,"
+            "\"data_timestamp\":\"%04u-%02u-%02uT%02u:%02u:%02uZ\""
+        "}",
+        CONFIG_COAP_DEVICE_ID,
+        pvt_data->latitude,
+        pvt_data->longitude,
+        pvt_data->accuracy,
+        pvt_data->datetime.year,
+        pvt_data->datetime.month,
+        pvt_data->datetime.day,
+        pvt_data->datetime.hour,
+        pvt_data->datetime.minute,
+        pvt_data->datetime.seconds
+    );
+
     if (err < 0) {
-            LOG_ERR("Failed to print to buffer: %d", err);
-            return -1;
-    } 
-    
-    return 0;                            
+        LOG_ERR("Failed to print to buffer: %d", err);
+        return -1;
+    }
+
+    if (err >= sizeof(gps_data)) {
+        LOG_ERR("GPS data buffer too small. Needed %d bytes", err + 1);
+        return -1;
+    }
+
+    LOG_INF("Stored GPS JSON: %s", gps_data);
+
+    return 0;
 }
 
 void gnss_event_handler(int event) {

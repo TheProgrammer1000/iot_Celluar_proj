@@ -37,21 +37,37 @@ int client_post_send(const uint8_t *payload) {
         int err;
         struct coap_packet request;
 
-        err = coap_packet_init(&request, coap_buf, sizeof(coap_buf), APP_COAP_VERSION, COAP_TYPE_NON_CON, sizeof(next_token), (uint8_t*)&next_token, COAP_METHOD_POST, coap_next_id());
+        err = coap_packet_init(&request, coap_buf, sizeof(coap_buf), APP_COAP_VERSION, COAP_TYPE_CON, sizeof(next_token), (uint8_t*)&next_token, COAP_METHOD_POST, coap_next_id());
         if(err < 0) {
                 LOG_ERR("Failted to send CoAP request, %d", errno);
                 return errno;
         }
 
-        err = coap_packet_append_option(&request, COAP_OPTION_URI_PATH, (uint8_t*)&CONFIG_COAP_TX_RESOURCE, strlen(CONFIG_COAP_TX_RESOURCE));
-        if(err < 0) {
-                LOG_ERR("Failed to encode CoAP option, %d", err);
-	        return err; 
+        err = coap_packet_append_option(
+                &request,
+                COAP_OPTION_URI_PATH,
+                (const uint8_t *)"sensor_data",
+                strlen("sensor_data")
+        );
+        if (err < 0) {
+                LOG_ERR("Failed to append URI path sensor_data, %d", err);
+                return err;
         }
 
-        const uint8_t text_plain = COAP_CONTENT_FORMAT_TEXT_PLAIN;
+        err = coap_packet_append_option(
+                &request,
+                COAP_OPTION_URI_PATH,
+                (const uint8_t *)"gps",
+                strlen("gps")
+        );
+        if (err < 0) {
+                LOG_ERR("Failed to append URI path gps, %d", err);
+                return err;
+        }
 
-        err = coap_packet_append_option(&request, COAP_OPTION_CONTENT_FORMAT, &text_plain, sizeof(text_plain));
+        const uint8_t json_format = COAP_CONTENT_FORMAT_APP_JSON;
+
+        err = coap_packet_append_option(&request, COAP_OPTION_CONTENT_FORMAT, &json_format, sizeof(json_format));
         if(err < 0) {
                 LOG_ERR("Failed to append CoAP option, %d", err);
 	        return err; 
@@ -104,9 +120,9 @@ int client_put_send() {
 	        return err; 
         }
 
-        const uint8_t text_plain = COAP_CONTENT_FORMAT_TEXT_PLAIN;
+        const uint8_t json_format = COAP_CONTENT_FORMAT_TEXT_PLAIN;
 
-        err = coap_packet_append_option(&request, COAP_OPTION_CONTENT_FORMAT, &text_plain, sizeof(text_plain));
+        err = coap_packet_append_option(&request, COAP_OPTION_CONTENT_FORMAT, &json_format, sizeof(json_format));
         if(err < 0) {
                 LOG_ERR("Failed to append CoAP option, %d", err);
 	        return err; 
@@ -162,13 +178,13 @@ int client_handle_response(uint8_t *buf, int received) {
                 return 0;
         }
 
-        payload = coap_packet_get_payload(&reply, &payload_len);
-        if(payload_len > 0) {
-                snprintf((char*)temp_buf, MIN(payload_len+1, sizeof(temp_buf)), "%s", payload);
+      if (payload_len > 0) {
+                size_t copy_len = MIN(payload_len, sizeof(temp_buf) - 1);
+                memcpy(temp_buf, payload, copy_len);
+                temp_buf[copy_len] = '\0';
         } else {
-                strcpy((char*)temp_buf, "EMPTY");
+                strcpy((char *)temp_buf, "EMPTY");
         }
-
         LOG_INF("Response payload len: %d", payload_len);
 
         LOG_INF("CoAP response: Code 0x%x, Token 0x%02x%02x, Payload: %s",
