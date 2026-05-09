@@ -17,7 +17,7 @@ config COAP_RX_RESOURCE
 
 config COAP_DEVICE_ID
     int "CoAP device id - To know which sensor is speaking"
-    default 123456
+    default 456789
 
 # - Define PSK Identity configurations
 config COAP_DEVICE_NAME

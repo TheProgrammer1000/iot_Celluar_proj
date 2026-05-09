@@ -55,11 +55,13 @@ int main(void)
                 return 0;
 	}
 
+        LOG_INF("MAIN: before modem_configure");
         err = modem_configure();
         if(err) {
                 LOG_ERR("Failed to configure modem");
                 return 0;
         }
+        LOG_INF("MAIN: after modem_configure");
 
         if(app_state == APP_STATE_LTE_READY) {
                 dk_set_led_on(DK_LED2);
@@ -86,7 +88,7 @@ int main(void)
                 return 0;
         }
 
-
+        LOG_INF("MAIN: before set GNSS handler");
         if(nrf_modem_gnss_event_handler_set(gnss_event_handler) != 0)
         {
                 LOG_ERR("Failed to set gnns event handler!");
@@ -103,11 +105,20 @@ int main(void)
                 return 0;
         }
 
+        LOG_INF("MAIN: before agnss_init");
+        err = agnss_init();
+        if (err) {
+                LOG_ERR("Failed to init A-GNSS");
+                return 0;
+        }
+
         LOG_INF("Starting GNSS");
         if(nrf_modem_gnss_start() != 0) {
                 LOG_ERR("Failed to start GNSS");
                 return;
         }
+
+        LOG_INF("MAIN: after GNSS start");
         gnss_start_time = k_uptime_get();
  
         LOG_INF("Press button 1 on your DK to (POST) send your if got gps data");

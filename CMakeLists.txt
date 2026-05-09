@@ -10,4 +10,5 @@ target_sources(app
         src/coap_client.c
         src/modem_lte.c
         src/gnss.c
+        src/agnss.c
     )

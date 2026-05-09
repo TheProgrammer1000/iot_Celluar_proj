@@ -117,6 +117,27 @@ void gnss_event_handler(int event) {
         case NRF_MODEM_GNSS_EVT_SLEEP_AFTER_FIX:
                 LOG_INF("GNSS got fix, we sleeping...");
                 break;
+                
+        case NRF_MODEM_GNSS_EVT_AGNSS_REQ: {
+                struct nrf_modem_gnss_agnss_data_frame agnss_req;
+
+                int err = nrf_modem_gnss_read(
+                        &agnss_req,
+                        sizeof(agnss_req),
+                        NRF_MODEM_GNSS_DATA_AGNSS_REQ
+                );
+
+                if (err != 0) {
+                        LOG_ERR("Error reading A-GNSS request: %d", err);
+                        break;
+                }
+
+                LOG_INF("GNSS requested A-GNSS data");
+
+                agnss_request_schedule(&agnss_req);
+
+                break;
+        }
             
     }
 }
