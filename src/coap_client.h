@@ -13,7 +13,15 @@ static uint8_t coap_buf[APP_COAP_MAX_MSG_LEN];
 
 
 int client_get_send();
-int client_post_send(const uint8_t *payload);
+
+/**
+ * @brief if returning 0 then successful
+ * @param payload 
+ * @param url_path_array 
+ * @param url_path_array_length 
+ * @return 
+ */
+int client_post_send(const uint8_t *payload, const char* url_path_array[],  size_t url_path_array_length);
 
 // NOTE: here if successful we will store the data in gloabal variable coap_buf
 int client_put_send();

@@ -33,7 +33,7 @@ int client_get_send() {
 }
 
 
-int client_post_send(const uint8_t *payload) {
+int client_post_send(const uint8_t *payload, const char* url_path_array[],  size_t url_path_array_length) {
         int err;
         struct coap_packet request;
 
@@ -43,28 +43,20 @@ int client_post_send(const uint8_t *payload) {
                 return errno;
         }
 
-        err = coap_packet_append_option(
+        for(size_t i = 0; i < url_path_array_length; i++) {
+             err = coap_packet_append_option(
                 &request,
                 COAP_OPTION_URI_PATH,
-                (const uint8_t *)"sensor_data",
-                strlen("sensor_data")
-        );
-        if (err < 0) {
-                LOG_ERR("Failed to append URI path sensor_data, %d", err);
-                return err;
-        }
+                (const uint8_t *)url_path_array[i],
+                strlen(url_path_array[i])
+                );
 
-        err = coap_packet_append_option(
-                &request,
-                COAP_OPTION_URI_PATH,
-                (const uint8_t *)"gps",
-                strlen("gps")
-        );
-        if (err < 0) {
-                LOG_ERR("Failed to append URI path gps, %d", err);
-                return err;
+                if (err < 0) {
+                        LOG_ERR("Failed to append URI path sensor_data, %d", err);
+                        return err;
+                }   
         }
-
+        
         const uint8_t json_format = COAP_CONTENT_FORMAT_APP_JSON;
 
         err = coap_packet_append_option(&request, COAP_OPTION_CONTENT_FORMAT, &json_format, sizeof(json_format));

@@ -10,7 +10,7 @@
 extern struct nrf_modem_gnss_pvt_data_frame pvt_data;
 extern int64_t gnss_start_time;
 extern bool first_fix;
-extern bool is_gps_data_stored;
+extern bool is_gnss_data_stored;
 extern uint8_t gps_data[MESSAGE_SIZE];
 
 
@@ -20,7 +20,7 @@ extern uint8_t gps_data[MESSAGE_SIZE];
 void print_fix_data(struct nrf_modem_gnss_pvt_data_frame *pvt_data);
 
 // Function to store the gps location, Accurancy and datetime on global varible gps_data
-int store_gps_data(struct nrf_modem_gnss_pvt_data_frame *pvt_data);
+int store_gnss_data(struct nrf_modem_gnss_pvt_data_frame *pvt_data);
 
 
 // @brief Handling the diffrent event from the GNSS reciever

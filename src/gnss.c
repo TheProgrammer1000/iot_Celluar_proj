@@ -5,7 +5,7 @@ LOG_MODULE_DECLARE(app);
 
 
 bool first_fix = false;
-bool is_gps_data_stored = false;
+bool is_gnss_data_stored = false;
 uint8_t gps_data[MESSAGE_SIZE];
 int64_t gnss_start_time;
 struct nrf_modem_gnss_pvt_data_frame pvt_data;
@@ -23,7 +23,7 @@ void print_fix_data(struct nrf_modem_gnss_pvt_data_frame *pvt_data)
 	       pvt_data->datetime.ms);
 }
 
-int store_gps_data(struct nrf_modem_gnss_pvt_data_frame *pvt_data)
+int store_gnss_data(struct nrf_modem_gnss_pvt_data_frame *pvt_data)
 {
     int err = snprintf(
         (char *)gps_data,
@@ -95,11 +95,11 @@ void gnss_event_handler(int event) {
                 if(pvt_data.flags & NRF_MODEM_GNSS_PVT_FLAG_FIX_VALID) {
                         print_fix_data(&pvt_data);
 
-                        if(store_gps_data(&pvt_data) != 0) {
+                        if(store_gnss_data(&pvt_data) != 0) {
                                 LOG_ERR("Failed to store GPS data to global (gps_data)");
                                 return;
                         } else {
-                                is_gps_data_stored = true;
+                                is_gnss_data_stored = true;
                         }
                         
 
