@@ -4,6 +4,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <dk_buttons_and_leds.h>
+#include "./nodecore_lib/nodecore_event.h"
 
 #include <zephyr/random/random.h>
 #include <zephyr/net/coap.h>
@@ -17,6 +18,9 @@
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
+#define DEVICE_STATUS_INTERVAL K_SECONDS(120)
+#define DEVICE_STATUS_JSON_SIZE 256
+
 
 app_state_t app_state = APP_STATE_INIT;
 
@@ -26,7 +30,7 @@ static struct k_work_delayable device_status_work;
 
 
 void device_status_start() {
-    k_work_reschedule(&device_status_work, K_SECONDS(20));
+    k_work_reschedule(&device_status_work, DEVICE_STATUS_INTERVAL);
 }
 
 void device_status_handler(struct k_work *work) {
@@ -35,23 +39,31 @@ void device_status_handler(struct k_work *work) {
         
         int err;
 
+        int battery_procentage = 75;
+
         size_t url_path_array_length = 2;
         const char* url_path_array[] = {"device", "status"};
 
 
-        char text[64];
+        char text[DEVICE_STATUS_JSON_SIZE];
 
         int len = snprintf(
                 text,
                 sizeof(text),
-                "{\"device_ID\": %d}",
-                CONFIG_COAP_DEVICE_ID
+                "{\"device_ID\": %d, \"battery_percent\": %d, \"firmware_version\": %d}",
+                CONFIG_COAP_DEVICE_ID,
+                battery_procentage,
+                CONFIG_FIRMARE_VERSION
         );
 
         if (len < 0 || len >= sizeof(text)) {
                 LOG_ERR("Failed to format device status JSON");
                 return;
         }
+
+        LOG_INF("Device status payload: %s", text);
+        LOG_INF("Device status payload length: %d", len);
+
 
         err = client_post_send((const uint8_t *)text, url_path_array, url_path_array_length);
 
@@ -60,13 +72,8 @@ void device_status_handler(struct k_work *work) {
                 return;
         }
         LOG_INF("Device status sended!");
-        k_work_reschedule(&device_status_work, K_SECONDS(20));
+        k_work_reschedule(&device_status_work, DEVICE_STATUS_INTERVAL);
 }
-
-
-
-
-
 
 static void button_handler(uint32_t button_state, uint32_t has_changed)
 {
@@ -103,6 +110,7 @@ int main(void)
                 return 0;
         }
 
+        
         if(app_state == APP_STATE_LTE_READY) {
                 dk_set_led_on(DK_LED2);
         }
@@ -127,6 +135,15 @@ int main(void)
                 LOG_INF("failed to initialize client");
                 return 0;
         }
+        
+        nodecore_send_event(
+                CONFIG_COAP_DEVICE_ID,
+                "device_cellular_ready",
+                "info",
+                "Device cellular connection and backend communication are ready",
+                CONFIG_FIRMARE_VERSION
+        );
+
 
         LOG_INF("setting GNSS handler");
         if(nrf_modem_gnss_event_handler_set(gnss_event_handler) != 0)
@@ -153,9 +170,12 @@ int main(void)
 
         LOG_INF("Starting GNSS");
         if(nrf_modem_gnss_start() != 0) {
+                nodecore_send_event(CONFIG_COAP_DEVICE_ID, "gnss_init_failed", "error", "Failed to initialize gnss", CONFIG_FIRMARE_VERSION);
                 LOG_ERR("Failed to start GNSS");
-                return;
+                return 0;
         }
+
+        nodecore_send_event(CONFIG_COAP_DEVICE_ID, "gnss_init_success", "info", "Successfully initialized gnss", CONFIG_FIRMARE_VERSION);
 
         LOG_INF("MAIN: after GNSS start");
         gnss_start_time = k_uptime_get();
@@ -182,7 +202,15 @@ int main(void)
 
                         if(client_post_send(gps_data, url_path_array, url_path_array_length) != 0) {
                                 LOG_ERR("Failed to send gps data");
-                                return 0;
+                                  nodecore_send_event(
+                                        CONFIG_COAP_DEVICE_ID,
+                                        "gnss_post_failed",
+                                        "error",
+                                        "Failed to send GNSS position to CoAP server",
+                                        CONFIG_FIRMARE_VERSION
+                                );
+                                is_gnss_data_stored = false;      
+                                continue;
                         }
 
                         // Efter vi har skickat så väntar vi här på respons från server om bekräftelse på hur det gick med senden
@@ -190,16 +218,40 @@ int main(void)
 
                         if (received < 0) {
                                 LOG_ERR("Socket error: %d, exit", errno);
-                                break;
+                                nodecore_send_event(
+                                        CONFIG_COAP_DEVICE_ID,
+                                        "coap_response_receive_failed",
+                                        "error",
+                                        "Failed to receive CoAP response from server",
+                                        CONFIG_FIRMARE_VERSION
+                                );
+                                is_gnss_data_stored = false;
+                                continue;
                         } else if (received == 0) {
+                                nodecore_send_event(
+                                        CONFIG_COAP_DEVICE_ID,
+                                        "coap_empty_response",
+                                        "warning",
+                                        "Empty CoAP response received from server",
+                                        CONFIG_FIRMARE_VERSION
+                                );
                                 LOG_ERR("Empty datagram");
+                                is_gnss_data_stored = false;
                                 continue;
                         }
 
                         err = client_handle_response(coap_buf, received);
                         if (err < 0) {
                                 LOG_ERR("Invalid response, exit");
-                                break;
+                                nodecore_send_event(
+                                        CONFIG_COAP_DEVICE_ID,
+                                        "coap_invalid_response",
+                                        "error",
+                                        "Invalid CoAP response received from server",
+                                        CONFIG_FIRMARE_VERSION
+                                );
+                                is_gnss_data_stored = false;
+                                continue;
                         }
                         else {
                                 is_gnss_data_stored = false;

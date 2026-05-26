@@ -11,4 +11,5 @@ target_sources(app
         src/modem_lte.c
         src/gnss.c
         src/agnss.c
+        src/nodecore_lib/nodecore_event.c
     )

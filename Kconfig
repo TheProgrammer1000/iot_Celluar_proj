@@ -7,6 +7,11 @@ config COAP_SERVER_PORT
     int "CoAP server port"
     default 5683
 
+config FIRMARE_VERSION
+    string "Firmware version"
+    default "1.0.0"
+
+
 config COAP_TX_RESOURCE
     string "CoAP resource - this is the TX channel of the board"
     default "large-update"

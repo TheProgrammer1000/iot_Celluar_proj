@@ -78,8 +78,8 @@ int client_post_send(const uint8_t *payload, const char* url_path_array[],  size
         }
 
 
-        LOG_INF("Sending GPS payload: %s", payload);
-        LOG_INF("Sending GPS payload len: %d", strlen((char *)payload));
+        LOG_INF("Sending payload: %s", payload);
+        LOG_INF("Sending payload len: %d", strlen((char *)payload));
         /*
                 Det är i detta request packet vi har packeterat vårt meddalnde i property data
                 Sedan i offset finns längden på den 
