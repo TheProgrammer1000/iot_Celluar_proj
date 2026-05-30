@@ -12,4 +12,5 @@ target_sources(app
         src/gnss.c
         src/agnss.c
         src/nodecore_lib/nodecore_event.c
+        src/adc_input.c
     )

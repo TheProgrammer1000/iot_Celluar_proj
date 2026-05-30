@@ -3,31 +3,61 @@
 LOG_MODULE_DECLARE(app, LOG_LEVEL_INF);
 
 // NOTE: here if successful we will store the data in gloabal variable coap_buf
-int client_get_send() {
+int client_get_send(const char *url_path_array[], size_t url_path_array_length)
+{
         int err;
-
         struct coap_packet request;
 
-        err = coap_packet_init(&request, coap_buf, sizeof(coap_buf), APP_COAP_VERSION, COAP_TYPE_NON_CON, sizeof(next_token), (uint8_t* )&next_token, COAP_METHOD_GET, coap_next_id());
+        err = coap_packet_init(
+                &request,
+                coap_buf,
+                sizeof(coap_buf),
+                APP_COAP_VERSION,
+                COAP_TYPE_CON,
+                sizeof(next_token),
+                (uint8_t *)&next_token,
+                COAP_METHOD_GET,
+                coap_next_id()
+        );
 
-        if(err < 0) {
-                LOG_ERR("Failed to create CoAP request request, %d", err);
+        if (err < 0) {
+                LOG_ERR("Failed to create CoAP GET request: %d", err);
                 return err;
         }
 
-        err = coap_packet_append_option(&request, COAP_OPTION_URI_PATH, (uint8_t*)&CONFIG_COAP_RX_RESOURCE, strlen(CONFIG_COAP_RX_RESOURCE));
-        if (err < 0) {
-	        LOG_ERR("Failed to encode CoAP option, %d", err);
-	        return err;
+        LOG_INF("Building CoAP GET path:");
+
+        for (size_t i = 0; i < url_path_array_length; i++) {
+                LOG_INF("Path[%d]: %s", i, url_path_array[i]);
+
+                err = coap_packet_append_option(
+                        &request,
+                        COAP_OPTION_URI_PATH,
+                        (const uint8_t *)url_path_array[i],
+                        strlen(url_path_array[i])
+                );
+
+                if (err < 0) {
+                        LOG_ERR("Failed to append URI path[%d]: %d", i, err);
+                        return err;
+                }
         }
 
+        LOG_INF("CoAP GET packet size: %d bytes", request.offset);
+
         err = send(sock, request.data, request.offset, 0);
-        if(err < 0) {
-                LOG_ERR("Failed to send CoAP request, %d", errno);
+
+        if (err < 0) {
+                LOG_ERR("Failed to send CoAP GET request, errno: %d", errno);
                 return errno;
         }
 
+        LOG_INF("send() returned: %d bytes", err);
         LOG_INF("CoAP GET request sent: Token: 0x%04x", next_token);
+
+        if (err != request.offset) {
+                LOG_WRN("Partial send: sent %d of %d bytes", err, request.offset);
+        }
 
         return 0;
 }

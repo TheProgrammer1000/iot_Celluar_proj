@@ -10,6 +10,7 @@ int nodecore_send_event(const int device_ID,
                         const char *event_type,
                         const char *severity,
                         const char *message,
+                        const char *data_transport,
                         const char *firmware_version) {
     
     int err;
@@ -24,12 +25,14 @@ int nodecore_send_event(const int device_ID,
             "\"event_type\":\"%s\","
             "\"severity\":\"%s\","
             "\"message\":\"%s\","
+            "\"data_transport\":\"%s\","
             "\"firmware_version\":\"%s\""
         "}",
         device_ID,
         event_type,
         severity,
         message,
+        data_transport,
         firmware_version
     );
 
