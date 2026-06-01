@@ -108,50 +108,54 @@ int main(void)
         }
         LOG_INF("adc initiazled successful!");
 
-        // if (dk_leds_init() != 0) {
-	// 	LOG_ERR("Failed to initialize the LEDs Library");
-        //         return 0;
-	// }
+        if (dk_leds_init() != 0) {
+		LOG_ERR("Failed to initialize the LEDs Library");
+                return 0;
+	}
 
-        // err = modem_configure();
-        // if(err) {
-        //         LOG_ERR("Failed to configure modem");
-        //         return 0;
-        // }
+        err = modem_configure();
+        if(err) {
+                LOG_ERR("Failed to configure modem");
+                return 0;
+        }
         
-        // if(app_state == APP_STATE_LTE_READY) {
-        //         dk_set_led_on(DK_LED2);
-        // }
+        if(app_state == APP_STATE_LTE_READY) {
+                dk_set_led_on(DK_LED2);
+        }
 
-        // err = lte_lc_func_mode_set(LTE_LC_FUNC_MODE_ACTIVATE_GNSS);
-        // if(err) {
-        //         LOG_ERR("Failed to set modem mode!");
-        //         return 0;
-        // }
+        err = lte_lc_func_mode_set(LTE_LC_FUNC_MODE_ACTIVATE_GNSS);
+        if(err) {
+                LOG_ERR("Failed to set modem mode!");
+                return 0;
+        }
 
-        //        if(dk_buttons_init(button_handler) != 0) {
-        //         LOG_ERR("Failted to init buttons library");
-        //         return 0;
-        // }
+               if(dk_buttons_init(button_handler) != 0) {
+                LOG_ERR("Failted to init buttons library");
+                return 0;
+        }
 
-        // if(server_resolve() != 0) {
-        //         LOG_INF("Failted to resolve server name");
-        //         return 0;
-        // }
+        if(server_resolve() != 0) {
+                LOG_INF("Failted to resolve server name");
+                return 0;
+        }
 
-        // if(client_init() != 0) {
-        //         LOG_INF("failed to initialize client");
-        //         return 0;
-        // }
+        if(client_init() != 0) {
+                LOG_INF("failed to initialize client");
+                return 0;
+        }
         
-        // nodecore_send_event(
-        //         CONFIG_COAP_DEVICE_ID,
-        //         "device_cellular_ready",
-        //         "info",
-        //         "Device cellular connection and backend communication are ready",
-        //         "cellular",
-        //         CONFIG_FIRMARE_VERSION
-        // );
+        nodecore_send_event(
+                CONFIG_COAP_DEVICE_ID,
+                "device_cellular_ready",
+                "info",
+                "Device cellular connection and backend communication are ready",
+                "cellular",
+                CONFIG_FIRMARE_VERSION
+        );
+
+        k_sleep(K_MSEC(1000));
+
+        
 
 
         // LOG_INF("setting GNSS handler");
@@ -198,20 +202,20 @@ int main(void)
         // device_status_start();
         
 
-//        char device_id_str[16];
+       char device_id_str[16];
 
-//         snprintk(device_id_str, sizeof(device_id_str), "%d", CONFIG_COAP_DEVICE_ID);
+        snprintk(device_id_str, sizeof(device_id_str), "%d", CONFIG_COAP_DEVICE_ID);
 
-//         const char *url_path_array[] = {
-//                 "device",
-//                 "firmware_command",
-//                 device_id_str
-//         };
+        const char *url_path_array[] = {
+                "device",
+                "firmware_command",
+                device_id_str
+        };
 
-//         if (client_get_send(url_path_array, ARRAY_SIZE(url_path_array)) != 0) {
-//                 LOG_ERR("ERROR GET REQUEST");
-//                 return -1;
-//         }
+        if (client_get_send(url_path_array, ARRAY_SIZE(url_path_array)) != 0) {
+                LOG_ERR("ERROR GET REQUEST");
+                return -1;
+        }
 
         
 
@@ -219,29 +223,29 @@ int main(void)
 
 
         while(true) {
-                k_sleep(K_MSEC(2000));
+                // k_sleep(K_MSEC(2000));
 
-                int32_t real_battery_mv = read_voltage_mv();
-                uint8_t battery_percent = calculate_battery_percentage(real_battery_mv);
+                // int32_t real_battery_mv = read_voltage_mv();
+                // uint8_t battery_percent = calculate_battery_percentage(real_battery_mv);
 
-                LOG_INF("Faktisk batterispanning: %d mV (%d%%)", real_battery_mv, battery_percent);
+                // LOG_INF("Faktisk batterispanning: %d mV (%d%%)", real_battery_mv, battery_percent);
         
-                // int received = recv(sock, coap_buf, sizeof(coap_buf), 0);
+                int received = recv(sock, coap_buf, sizeof(coap_buf), 0);
 
-                // if (received < 0) {
-                //         LOG_ERR("Socket error: %d, exit", errno);
-                //         return -1;
+                if (received < 0) {
+                        LOG_ERR("Socket error: %d, exit", errno);
+                        return -1;
 
-                // } else if (received == 0) {
-                //         LOG_ERR("Empty datagram");
-                //         return -1;
-                // }
+                } else if (received == 0) {
+                        LOG_ERR("Empty datagram");
+                        return -1;
+                }
 
-                // err = client_handle_response(coap_buf, received);
-                // if (err < 0) {
-                //         LOG_ERR("Invalid response, exit");
-                //         return -1;
-                // }
+                err = client_handle_response(coap_buf, received);
+                if (err < 0) {
+                        LOG_ERR("Invalid response, exit");
+                        return -1;
+                }
         
                 // if(is_gnss_data_stored == true) {
                 //         dk_set_led_on(DK_LED1);
