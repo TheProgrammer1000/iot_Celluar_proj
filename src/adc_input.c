@@ -1,5 +1,9 @@
 #include "adc_input.h"
 
+#include <zephyr/logging/log.h>
+
+LOG_MODULE_DECLARE(app, LOG_LEVEL_INF);
+
 #if !DT_NODE_EXISTS(DT_PATH(zephyr_user)) || \
 	!DT_NODE_HAS_PROP(DT_PATH(zephyr_user), io_channels)
 #error "No suitable devicetree overlay specified"

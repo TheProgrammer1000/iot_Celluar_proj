@@ -3,6 +3,7 @@
 #include <zephyr/drivers/adc.h>
 #include <zephyr/devicetree.h>
 
+
 #include <stdint.h>
 
 /* Initierar ADC-hårdvaran baserat på devicetree */

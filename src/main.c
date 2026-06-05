@@ -19,7 +19,9 @@
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
-#define DEVICE_STATUS_INTERVAL K_SECONDS(120)
+#define DEVICE_HEALTH_INTERVAL K_SECONDS(120)
+#define DEVICE_LIFECYCLE_INTERVAL K_SECONDS(20)
+
 #define DEVICE_STATUS_JSON_SIZE 256
 
 
@@ -27,24 +29,32 @@ app_state_t app_state = APP_STATE_INIT;
 
 static uint8_t recv_buf[MESSAGE_SIZE];
 
-static struct k_work_delayable device_status_work;
+static struct k_work_delayable device_health_work;
+static struct k_work_delayable device_lifecycle_work;
 
 
-void device_status_start() {
-    k_work_reschedule(&device_status_work, DEVICE_STATUS_INTERVAL);
+void device_health_start() {
+    k_work_reschedule(&device_health_work, DEVICE_HEALTH_INTERVAL);
+}
+
+void device_lifecycle_start() {
+    k_work_reschedule(&device_lifecycle_work, DEVICE_LIFECYCLE_INTERVAL);
 }
 
 
-void device_status_handler(struct k_work *work) {
+void device_health_handler(struct k_work *work) {
         
         ARG_UNUSED(work);
         
         int err;
 
-        int battery_procentage = 75;
+        int32_t real_battery_mv = read_voltage_mv();
+        uint8_t battery_percent = calculate_battery_percentage(real_battery_mv);
+
+                // LOG_INF("Faktisk batterispanning: %d mV (%d%%)", real_battery_mv, battery_percent);
 
         size_t url_path_array_length = 2;
-        const char* url_path_array[] = {"device", "status"};
+        const char* url_path_array[] = {"device", "health"};
 
 
         char text[DEVICE_STATUS_JSON_SIZE];
@@ -52,9 +62,9 @@ void device_status_handler(struct k_work *work) {
         int len = snprintf(
                 text,
                 sizeof(text),
-                "{\"device_ID\": %d, \"battery_percent\": %d, \"firmware_version\": %d}",
+                "{\"device_ID\": %d, \"battery_percent\": %d, \"firmware_version\": \"%s\"}",
                 CONFIG_COAP_DEVICE_ID,
-                battery_procentage,
+                battery_percent,
                 CONFIG_FIRMARE_VERSION
         );
 
@@ -63,18 +73,66 @@ void device_status_handler(struct k_work *work) {
                 return;
         }
 
-        LOG_INF("Device status payload: %s", text);
-        LOG_INF("Device status payload length: %d", len);
+        LOG_INF("Device health payload: %s", text);
+        LOG_INF("Device health payload length: %d", len);
 
 
         err = client_post_send((const uint8_t *)text, url_path_array, url_path_array_length);
 
         if(err != 0) {
-                LOG_ERR("Error sendning device status!");
+                LOG_ERR("Error sendning device health!");
                 return;
         }
-        LOG_INF("Device status sended!");
-        k_work_reschedule(&device_status_work, DEVICE_STATUS_INTERVAL);
+        LOG_INF("Device health sended!");
+        k_work_reschedule(&device_health_work, DEVICE_HEALTH_INTERVAL);
+}
+
+
+void device_lifecycle_handler(struct k_work *work) {
+        
+        ARG_UNUSED(work);
+        
+        int err;
+
+        int32_t real_battery_mv = read_voltage_mv();
+        uint8_t battery_percent = calculate_battery_percentage(real_battery_mv);
+        // uint8_t battery_percent = 93;
+                // LOG_INF("Faktisk batterispanning: %d mV (%d%%)", real_battery_mv, battery_percent);
+
+        size_t url_path_array_length = 2;
+        const char* url_path_array[] = {"device", "lifecycle"};
+
+
+        char text[DEVICE_STATUS_JSON_SIZE];
+
+        int len = snprintf(
+                text,
+                sizeof(text),
+                "{\"device_ID\": %d, \"battery_percent\": %d, \"gnss_periodic_timeout\": %d, \"gnss_periodic_interval\": %d, \"firmware_version\": \"%s\"}",
+                CONFIG_COAP_DEVICE_ID,
+                battery_percent,
+                CONFIG_GNSS_PERIODIC_TIMEOUT,
+                CONFIG_GNSS_PERIODIC_INTERVAL,
+                CONFIG_FIRMARE_VERSION
+        );
+
+        if (len < 0 || len >= sizeof(text)) {
+                LOG_ERR("Failed to format device status JSON");
+                return;
+        }
+
+        LOG_INF("Device lifecycle payload: %s", text);
+        LOG_INF("Device lifecycle payload length: %d", len);
+
+
+        err = client_post_send((const uint8_t *)text, url_path_array, url_path_array_length);
+
+        if(err != 0) {
+                LOG_ERR("Error sendning device lifecycle!");
+                return;
+        }
+        LOG_INF("Device lifecycle sended!");
+        k_work_reschedule(&device_lifecycle_work, DEVICE_LIFECYCLE_INTERVAL);
 }
 
 static void button_handler(uint32_t button_state, uint32_t has_changed)
@@ -197,25 +255,29 @@ int main(void)
         // LOG_INF("Press button 2 on your DK to (GET) get validate data");
 
 
-        // k_work_init_delayable(&device_status_work, device_status_handler);
-        // k_work_submit(&device_status_work);
-        // device_status_start();
+        // k_work_init_delayable(&device_health_work, device_health_handler);
+        // k_work_submit(&device_health_work);
+        // device_health_start();
+
+        k_work_init_delayable(&device_lifecycle_work, device_lifecycle_handler);
+        k_work_submit(&device_lifecycle_work);
+        device_lifecycle_start();
         
 
-       char device_id_str[16];
+//        char device_id_str[16];
 
-        snprintk(device_id_str, sizeof(device_id_str), "%d", CONFIG_COAP_DEVICE_ID);
+//         snprintk(device_id_str, sizeof(device_id_str), "%d", CONFIG_COAP_DEVICE_ID);
 
-        const char *url_path_array[] = {
-                "device",
-                "firmware_command",
-                device_id_str
-        };
+//         const char *url_path_array[] = {
+//                 "device",
+//                 "firmware_command",
+//                 device_id_str
+//         };
 
-        if (client_get_send(url_path_array, ARRAY_SIZE(url_path_array)) != 0) {
-                LOG_ERR("ERROR GET REQUEST");
-                return -1;
-        }
+//         if (client_get_send(url_path_array, ARRAY_SIZE(url_path_array)) != 0) {
+//                 LOG_ERR("ERROR GET REQUEST");
+//                 return -1;
+//         }
 
         
 

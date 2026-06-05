@@ -9,5 +9,6 @@
 
 #define SEC_TAG 12
 
+extern int64_t lte_network_connect_duration;  
 int modem_configure(void);
 void lte_handler(const struct lte_lc_evt *const evt);

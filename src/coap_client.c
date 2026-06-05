@@ -225,7 +225,7 @@ int client_handle_response(uint8_t *buf, int received)
         if (received_token == last_get_token) {
                 LOG_INF(">>> This is a response to our GET request!");
                 bool is_modem_info = true;
-                char json_buffer[256]; // Denna buffer måste vara stor nog att rymma hela JSON-texten
+                char json_buffer[512]; // Denna buffer måste vara stor nog att rymma hela JSON-texten
 
                 
                 if (strstr((char*)temp_buf, "\"command\":\"diagnostic\"") != NULL) {
@@ -259,11 +259,6 @@ int client_handle_response(uint8_t *buf, int received)
                                 is_modem_info = false;   
                         }
                         LOG_INF("MODEM_INFO_OPERATOR: %s", diag_report.operator);
-
-                        if (modem_info_string_get(MODEM_INFO_IP_ADDRESS, diag_report.ip_address, sizeof(diag_report.ip_address)) < 0) {
-                                LOG_ERR("Failed to get MODEM_INFO_IP_ADDRESS!");
-                                is_modem_info = false;   
-                        }
 
                         
                         if(is_modem_info == false) { 
@@ -315,13 +310,11 @@ int client_handle_response(uint8_t *buf, int received)
                                         "{\"rsrp\":%d,"
                                         "\"cell_id\":\"%s\","
                                         "\"operator\":\"%s\","
-                                        "\"ip_address\":\"%s\","
                                         "\"battery\":%d}",   
 
                                         diag_report.rsrp_dbm,
                                         diag_report.cell_id,
                                         diag_report.operator,
-                                        diag_report.ip_address,
                                         diag_report.battery_percent
                                 );
 
